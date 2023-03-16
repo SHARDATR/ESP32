@@ -1,0 +1,53 @@
+#include <DHT.h>
+
+#define DHTPIN 4 // DHT11 data pin
+#define DHTTYPE DHT11 // DHT11 sensor type
+DHT dht(DHTPIN, DHTTYPE);
+
+#define SOILPIN 26 // soil moisture sensor pin
+int soilValue;
+
+void setup() {
+  Serial.begin(9600); // initialize serial communication
+  dht.begin(); // initialize DHT11 sensor
+}
+
+void loop() {
+  float humidity = dht.readHumidity(); // read humidity value from DHT11 sensor
+  float temperature = dht.readTemperature(); // read temperature value from DHT11 sensor
+  soilValue = analogRead(SOILPIN); // read soil moisture sensor value
+  
+  int plantStatus = determinePlantStatus(humidity, temperature, soilValue); // determine plant status
+  
+  if (plantStatus == 0) { // plant is thirsty
+    Serial.write(0xF0); // write Unicode character for wilted plant
+    Serial.write(0x9F);
+    Serial.write(0xA5);
+    Serial.write(0x80);
+  } else if (plantStatus == 1) { // water is overloaded
+    Serial.write(0xF0); // write Unicode character for droplet
+    Serial.write(0x9F);
+    Serial.write(0x92);
+    Serial.write(0xA7);
+  } else if (plantStatus == 2) { // plant is happy
+    Serial.write(0xF0); // write Unicode character for smiling plant
+    Serial.write(0x9F);
+    Serial.write(0x8C);
+    Serial.write(0xBF);
+    Serial.write(0xF0);
+    Serial.write(0x9F);
+    Serial.write(0x98);
+    Serial.write(0xBF);
+  }
+  
+  delay(1000); // wait for 1 second
+}
+
+int determinePlantStatus(float humidity, float temperature, int soilValue) {
+  if (humidity < 50 && temperature > 25 && soilValue < 500) { // plant is thirsty
+    return 0;
+  } else if (humidity > 70 && temperature < 20 && soilValue > 800) { // water is overloaded
+    return 1;
+  } else { // plant is happy
+    return 2;}
+}
